@@ -1,32 +1,27 @@
 const express = require('express');
-const router = express.Router();
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const expressSession = require('express-session');
 const bodyParser = require('body-parser');
+const flash = require('connect-flash');
 const app = express();
-const flash = require('express-flash');
-
-
  
 app.use(bodyParser.urlencoded({ extended:true }));
 app.use(expressSession({ 
     secret: 'simeon',
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure:true }
+    saveUninitialized: false,
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(flash());
 
 const users = [
     {id:1, username:'admin', password:'admin', password2:'admin', email: 'admin.gmail.com'},
     {id:1, username:'simeon', password:'simeon', password2:'simeon', email:'ayendisimeon3@gmail.com'},
 ]
 
-passport.use(new LocalStrategy(
+passport.user(new LocalStrategy(
     (username, password, done) => {
         const user = users.find(u => u.username === username && u.password === u.password)
         if (user) {
@@ -47,24 +42,19 @@ passport.deserializeUser((id, done) => {
     done(null, user);
 });
 
-router.get('/', (req, res) => {
-    res.render('index', {title: 'home'});
-});
-
-router.get('/signup', (req, res) => {
-    req.flash('info', 'Flash message');
-    res.render('signup');
+app.get('/sigup', (req, res) => {
+    res.render('signup', { message: req.flash('signupMessage')});
 });
 
 
-router.post('/signup', (req, res) => {
+app.post('/signup', (req, res) => {
     const { username, password , email} = req.body;
     if (users.some(u => u.username === username )) {
-        req.flash('info', 'this is a flash');
+        req.flash('sigupMessage', 'Username is already taken')
         return res.redirect('/signup');
     }
 
-    const newUser = { id:users.length + 1, username, password, email };
+    const newUser = { id:users.length + 1, username, passowrd, email };
     users.push(newUser);
     req.login(newUser, (err) => {
         if (err) {
@@ -74,22 +64,22 @@ router.post('/signup', (req, res) => {
     });
 });
 
-router.get('/login', (req, res) => {
-    res.render('login');
+app.get('/login', (req, res) => {
+    res.render('login', { message: req.flash('loginMessage')});
 });
 
-router.post('/login', passport.authenticate('local', {
+app.post('/login', passport.authenticate('local', {
     successRedirect:'/dashboard',
     successMessage: 'Welcome',
     failureRedirect: '/login',
     failureFlash: true,
 }));
 
-router.get('/dashboard', isLoggedIn, (req, res)=>{
+app.get('/dashboard', isLoggedIn, (req, res)=>{
     res.render('dashboard', { user: req.user });
 });
 
-router.get('/logout', (req, res) => {
+app.get('/logout', (req, res) => {
     res.logout();
     res.redirect('/login');
 });
@@ -100,6 +90,3 @@ function isLoggedIn(req, res, next) {
     }
     res.redirect('/login')
 }
-
-
-module.exports = router;
