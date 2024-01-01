@@ -1,5 +1,5 @@
-<%- include('layout', { body: `
-    <h2>Dashboard</h2>
+<% if (user) { %>
     <p>Welcome, <strong><%= user.username %></strong>!</p>
-    <a href="/logout" class="btn btn-primary">Logout</a>
-`}) %>
+<% } else { %>
+    <p>User not found</p>
+<% } %>
